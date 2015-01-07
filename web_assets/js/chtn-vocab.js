@@ -44,14 +44,68 @@
             var sql = window.SQL;
             CHTN.db = new sql.Database();
 
+            CHTN._createSQLTables();
+            CHTN._loadSQLData();
+
+            CHTN.db.simplequery = function (query) {
+                var results = CHTN.db.exec(query);
+                return results[0].values.map(function (value) {
+                    return value;
+                });
+            }
+
+            console.log("CHTN SQL Vocabulary loaded into CHTN.db. Query with CHTN.db.exec(query) or CHTN.db.simplequery(query).");
+        },
+
+        _createSQLTables: function () {
             var createTablesString = "";
-            createTablesString += "CREATE TABLE categories      (id VARCHAR(16), description VARCHAR(256));"
-            createTablesString += "CREATE TABLE anatomic_sites  (id VARCHAR(16), description VARCHAR(256));"
-            createTablesString += "CREATE TABLE diagnoses       (id VARCHAR(16), description VARCHAR(256));"
-            createTablesString += "CREATE TABLE subsites        (id VARCHAR(16), description VARCHAR(256));"
+            createTablesString += "CREATE TABLE categories      (id VARCHAR(36) PRIMARY KEY, description VARCHAR(256));"
+            createTablesString += "CREATE TABLE anatomic_sites  (id VARCHAR(36) PRIMARY KEY, description VARCHAR(256));"
+            createTablesString += "CREATE TABLE diagnoses       (id VARCHAR(36) PRIMARY KEY, description VARCHAR(256));"
+            createTablesString += "CREATE TABLE subsites        (id VARCHAR(36) PRIMARY KEY, description VARCHAR(256));"
+            createTablesString += [
+                "CREATE TABLE dis_relationship_master (",
+                "    ID VARCHAR2(36) PRIMARY KEY,",
+                "    CATEGORY_ID VARCHAR2(36) CONSTRAINT CATEGORY_ID REFERENCES categories (id),",
+                "    ANATOMIC_SITE_ID VARCHAR2(36) CONSTRAINT ANATOMIC_SITE_ID REFERENCES anatomic_sites (id),",
+                "    DIAGNOSIS_ID VARCHAR2(36) CONSTRAINT DIAGNOSIS_ID REFERENCES diagnoses (id)",
+                ");"].join("");
+            createTablesString += [
+                "CREATE TABLE dis_relationship_site_subsite (",
+                "    ANATOMIC_SITE_ID VARCHAR2(36) CONSTRAINT ANATOMIC_SITE_ID REFERENCES anatomic_sites (id),",
+                "    ANATOMIC_SUBSITE_ID VARCHAR2(36) CONSTRAINT ANATOMIC_SUBSITE_ID REFERENCES subsites (id)",
+                ");"].join("");
             CHTN.db.run(createTablesString);
+        },
 
-
+        _loadSQLData: function () {
+            var knownEntities = {}, knownSubsites = {};
+            CHTN.vocabulary.forEach(function (row) {
+                var insertStatement = "", subsiteStatement;
+                if (!knownEntities[row["AS Id"]]) {
+                    insertStatement += "INSERT INTO anatomic_sites VALUES ('"+row["AS Id"]+"', '"+row["Anatomic Site"]+"');";
+                    knownEntities[row["AS Id"]] = true;
+                }
+                if (!knownEntities[row["SubS Id"]]) {
+                    insertStatement += "INSERT INTO subsites VALUES ('"+row["SubS Id"]+"', '"+row["Subsite"]+"');";
+                    knownEntities[row["SubS Id"]] = true;
+                }
+                if (!knownEntities[row["Cat Id"]]) {
+                    insertStatement += "INSERT INTO categories VALUES ('"+row["Cat Id"]+"', '"+row["Category"]+"');";
+                    knownEntities[row["Cat Id"]] = true;
+                }
+                if (!knownEntities[row["DX Id"]]) {
+                    insertStatement += "INSERT INTO diagnoses VALUES ('"+row["DX Id"]+"', '"+row["Diagnosis"]+"');";
+                    knownEntities[row["DX Id"]] = true;
+                }
+                subsiteStatement = "INSERT INTO dis_relationship_site_subsite VALUES ('"+row["AS Id"]+"', '"+row["SubS Id"]+"');";
+                if (!knownSubsites[subsiteStatement]) {
+                    insertStatement += subsiteStatement;
+                    knownSubsites[subsiteStatement] = true;
+                }
+                insertStatement += "INSERT INTO dis_relationship_master VALUES ('"+row["Id"]+"', '"+row["Cat Id"]+"', '"+row["AS Id"]+"', '"+row["DX Id"]+"');";
+                CHTN.db.run(insertStatement);
+            });
         },
 
         showTables: function () {
@@ -60,6 +114,11 @@
                 return value[0];
             });
         },
+
+        queries: {
+            denormalize_dis_relationship_master: "SELECT rel.CATEGORY_ID, c.description, rel.ANATOMIC_SITE_ID, s.description, rel.DIAGNOSIS_ID, d.description FROM dis_relationship_master AS rel LEFT OUTER JOIN categories AS c ON rel.CATEGORY_ID = c.id LEFT OUTER JOIN anatomic_sites AS s ON rel.ANATOMIC_SITE_ID = s.id LEFT OUTER JOIN diagnoses AS d ON rel.DIAGNOSIS_ID = d.id",
+            denormalize_dis_relationship_site_subsite: "SELECT rel.ANATOMIC_SITE_ID, s.description, rel.ANATOMIC_SUBSITE_ID, ss.description FROM dis_relationship_site_subsite AS rel LEFT OUTER JOIN anatomic_sites AS s ON rel.ANATOMIC_SITE_ID = s.id LEFT OUTER JOIN subsites AS ss ON rel.ANATOMIC_SUBSITE_ID = ss.id"
+        }
 
     }
 
