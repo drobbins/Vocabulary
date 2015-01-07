@@ -16,6 +16,7 @@
                     CHTN._parseResults = results;
                     CHTN.vocabulary = results.data;
                     CHTN._createCrossFilters(CHTN.vocabulary);
+                    CHTN._initSQL();
                     $("#raw").text(JSON.stringify(results.data, null, 2));
                 }
             });
@@ -37,7 +38,29 @@
             CHTN.groups.countByAnatomicSite = CHTN.dimensions.byAnatomicSite.group().reduceCount();
             CHTN.groups.countBySubsite      = CHTN.dimensions.bySubsite.group().reduceCount();
             CHTN.groups.countByDiagnosis    = CHTN.dimensions.byDiagnosis.group().reduceCount();
-        }
+        },
+
+        _initSQL: function () {
+            var sql = window.SQL;
+            CHTN.db = new sql.Database();
+
+            var createTablesString = "";
+            createTablesString += "CREATE TABLE categories      (id VARCHAR(16), description VARCHAR(256));"
+            createTablesString += "CREATE TABLE anatomic_sites  (id VARCHAR(16), description VARCHAR(256));"
+            createTablesString += "CREATE TABLE diagnoses       (id VARCHAR(16), description VARCHAR(256));"
+            createTablesString += "CREATE TABLE subsites        (id VARCHAR(16), description VARCHAR(256));"
+            CHTN.db.run(createTablesString);
+
+
+        },
+
+        showTables: function () {
+            var tableQueryResults = CHTN.db.exec("SELECT name FROM sqlite_master WHERE type='table';")
+            return tableQueryResults[0].values.map(function (value) {
+                return value[0];
+            });
+        },
+
     }
 
     CHTN._init();
