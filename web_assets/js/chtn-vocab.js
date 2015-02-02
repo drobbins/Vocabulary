@@ -4,6 +4,27 @@
 
     var CHTN = window.CHTN = {
 
+        version: "1.0.0",
+
+        keys: {
+            site: {
+                id: "AS Id",
+                description: "Anatomic Site"
+            },
+            subsite: {
+                id: "SubS Id",
+                description: "Subsite"
+            },
+            category: {
+                id: "Cat Id",
+                description: "Category"
+            },
+            diagnosis: {
+                id: "DX Id",
+                description: "Diagnosis"
+            }
+        },
+
         // Download and Parse the Vocabulary TSV file, and populate the CHTN object.
         _init: function () {
             Papa.parse("CHTN%20Vocab-Disease%20List.txt", {
@@ -15,8 +36,8 @@
                     CHTN._rawVocabulary = file;
                     CHTN._parseResults = results;
                     CHTN.vocabulary = results.data;
-                    CHTN._createCrossFilters(CHTN.vocabulary);
-                    CHTN._initSQL();
+                    //CHTN._createCrossFilters(CHTN.vocabulary);
+                    //CHTN._initSQL();
                     $("#raw").text(JSON.stringify(results.data, null, 2));
                 }
             });
@@ -113,6 +134,50 @@
             return tableQueryResults[0].values.map(function (value) {
                 return value[0];
             });
+        },
+
+        _toRDF: function () {
+            var root, context, docs = [];
+            root = "http://chtn.org/vocabulary/"+CHTN.version+"/"
+            context = {
+                "@vocab": root,
+                "chtn": root
+            }
+            CHTN.vocabulary.forEach(function (row) {
+                var site, subsite, category, diagnosis, graph;
+                graph = {
+                    "@context": context,
+                    "@id": "chtn:row/"+row.Id,
+                    "@graph": []
+                }
+                site = CHTN._extractEntity(row, "site")
+                graph["@graph"].push(site)
+                subsite = CHTN._extractEntity(row, "subsite")
+                graph["@graph"].push(subsite)
+                category = CHTN._extractEntity(row, "category")
+                graph["@graph"].push(category)
+                diagnosis = CHTN._extractEntity(row, "diagnosis")
+                graph["@graph"].push(diagnosis)
+                docs.push(graph);
+            });
+            jsonld.flatten(docs, function (err, flattened) {
+                CHTN.jsonld = flattened
+                // jsonld.compact(flattened, context, function (err, compacted) {
+                //     CHTN.jsonld = compacted;
+                // });
+            });
+            jsonld.normalize(docs, {format: 'application/nquads'}, function(err, normalized) {
+                CHTN.rdf = normalized
+                $("#raw-label").text("Raw RDF")
+                $("#raw").text(CHTN.rdf)
+            });
+        },
+
+        _extractEntity: function (row, type) {
+            return {
+                "@id": "chtn:"+row[CHTN.keys[type].id],
+                "description": row[CHTN.keys[type].description]
+            }
         },
 
         queries: {
