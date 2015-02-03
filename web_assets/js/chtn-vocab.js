@@ -35,7 +35,6 @@
         raw: {
             json: {},
             sql: "",
-            rdf: "",
             jsonld: false,
             text: ""
         },
@@ -51,11 +50,22 @@
                     CHTN.raw.text = file;
                     CHTN._parseResults = results;
                     CHTN.vocabulary = CHTN.raw.json = results.data;
+                    CHTN._renderTable();
                     $("#raw-json").text(JSON.stringify(results.data, null, 2));
                 }
             });
         },
 
+        _renderTable: function () {
+            var table = d3.select("#raw-tabular")
+                .selectAll("tr")
+                    .data(CHTN.raw.json).enter()
+                        .append("tr")
+                .selectAll("td")
+                    .data(function (d) { return _.values(d);}).enter()
+                        .append("td")
+                        .text(function (d) {return d;});
+        },
 
         _createCrossFilters: function (vocabulary) {
             var cf = CHTN.crossfilter = crossfilter(vocabulary);
