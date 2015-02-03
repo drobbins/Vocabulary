@@ -4,8 +4,10 @@
 
     var CHTN = window.CHTN = {
 
+        // CHTN Vocabulary Version
         version: "1.0.0",
 
+        // Column names in the CSV file / Keys in JSON version.
         keys: {
             site: {
                 id: "AS Id",
@@ -25,6 +27,15 @@
             }
         },
 
+        // Placeholders for raw data
+        raw: {
+            json: {},
+            sql: "",
+            rdf: "",
+            jsonld: {},
+            text: ""
+        },
+
         // Download and Parse the Vocabulary TSV file, and populate the CHTN object.
         _init: function () {
             Papa.parse("CHTN%20Vocab-Disease%20List.txt", {
@@ -33,12 +44,10 @@
                 delimiter: "\t",
                 complete: function (results, file) {
                     console.log("CHTN Vocabulary downloaded and parsed. See CHTN.vocabulary.");
-                    CHTN._rawVocabulary = file;
+                    CHTN.raw.text = file;
                     CHTN._parseResults = results;
-                    CHTN.vocabulary = results.data;
-                    //CHTN._createCrossFilters(CHTN.vocabulary);
-                    //CHTN._initSQL();
-                    $("#raw").text(JSON.stringify(results.data, null, 2));
+                    CHTN.vocabulary = CHTN.raw.json = results.data;
+                    $("#raw-json").text(JSON.stringify(results.data, null, 2));
                 }
             });
         },
@@ -62,71 +71,78 @@
         },
 
         _initSQL: function () {
+            CHTN._createSQLTables();
+            CHTN._createSQLData();
+            $("#raw-sql").text(CHTN.raw.sql)
+        },
+
+
+        _createSQLTables: function () {
+            var createTableStatement = "";
+            createTableStatement += "CREATE TABLE categories      (id VARCHAR(36) PRIMARY KEY, description VARCHAR(256)); \n"
+            createTableStatement += "CREATE TABLE anatomic_sites  (id VARCHAR(36) PRIMARY KEY, description VARCHAR(256)); \n"
+            createTableStatement += "CREATE TABLE diagnoses       (id VARCHAR(36) PRIMARY KEY, description VARCHAR(256)); \n"
+            createTableStatement += "CREATE TABLE subsites        (id VARCHAR(36) PRIMARY KEY, description VARCHAR(256)); \n"
+            createTableStatement += "\n";
+            createTableStatement += [
+                "CREATE TABLE dis_relationship_master (",
+                "    ID VARCHAR2(36) PRIMARY KEY,",
+                "    CATEGORY_ID VARCHAR2(36) CONSTRAINT CATEGORY_ID REFERENCES categories (id),",
+                "    ANATOMIC_SITE_ID VARCHAR2(36) CONSTRAINT ANATOMIC_SITE_ID REFERENCES anatomic_sites (id),",
+                "    DIAGNOSIS_ID VARCHAR2(36) CONSTRAINT DIAGNOSIS_ID REFERENCES diagnoses (id)",
+                ");"].join(" \n");
+            createTableStatement += "\n";
+            createTableStatement += "\n";
+            createTableStatement += [
+                "CREATE TABLE dis_relationship_site_subsite (",
+                "    ANATOMIC_SITE_ID VARCHAR2(36) CONSTRAINT ANATOMIC_SITE_ID REFERENCES anatomic_sites (id),",
+                "    ANATOMIC_SUBSITE_ID VARCHAR2(36) CONSTRAINT ANATOMIC_SUBSITE_ID REFERENCES subsites (id)",
+                ");"].join(" \n");
+            createTableStatement += "\n";
+            createTableStatement += "\n";
+            CHTN.raw.sql += createTableStatement;
+        },
+
+        _createSQLData: function () {
+            var knownEntities = {}, knownSubsites = {};
+            CHTN.raw.json.forEach(function (row) {
+                var insertStatement = "", subsiteStatement;
+                if (!knownEntities[row["AS Id"]]) {
+                    insertStatement += "INSERT INTO anatomic_sites VALUES ('"+row["AS Id"]+"', '"+row["Anatomic Site"]+"'); \n";
+                    knownEntities[row["AS Id"]] = true;
+                }
+                if (!knownEntities[row["SubS Id"]]) {
+                    insertStatement += "INSERT INTO subsites VALUES ('"+row["SubS Id"]+"', '"+row["Subsite"]+"'); \n";
+                    knownEntities[row["SubS Id"]] = true;
+                }
+                if (!knownEntities[row["Cat Id"]]) {
+                    insertStatement += "INSERT INTO categories VALUES ('"+row["Cat Id"]+"', '"+row["Category"]+"'); \n";
+                    knownEntities[row["Cat Id"]] = true;
+                }
+                if (!knownEntities[row["DX Id"]]) {
+                    insertStatement += "INSERT INTO diagnoses VALUES ('"+row["DX Id"]+"', '"+row["Diagnosis"]+"'); \n";
+                    knownEntities[row["DX Id"]] = true;
+                }
+                subsiteStatement = "INSERT INTO dis_relationship_site_subsite VALUES ('"+row["AS Id"]+"', '"+row["SubS Id"]+"'); \n";
+                if (!knownSubsites[subsiteStatement]) {
+                    insertStatement += subsiteStatement;
+                    knownSubsites[subsiteStatement] = true;
+                }
+                insertStatement += "INSERT INTO dis_relationship_master VALUES ('"+row["Id"]+"', '"+row["Cat Id"]+"', '"+row["AS Id"]+"', '"+row["DX Id"]+"'); \n";
+                CHTN.raw.sql += insertStatement;
+            });
+        },
+
+        populateSQLDB: function () {
             var sql = window.SQL;
             CHTN.db = new sql.Database();
-
-            CHTN._createSQLTables();
-            CHTN._loadSQLData();
-
+            console.log("CHTN SQL Vocabulary loaded into CHTN.db. Query with CHTN.db.exec(query) or CHTN.db.simplequery(query).");
             CHTN.db.simplequery = function (query) {
                 var results = CHTN.db.exec(query);
                 return results[0].values.map(function (value) {
                     return value;
                 });
             }
-
-            console.log("CHTN SQL Vocabulary loaded into CHTN.db. Query with CHTN.db.exec(query) or CHTN.db.simplequery(query).");
-        },
-
-        _createSQLTables: function () {
-            var createTablesString = "";
-            createTablesString += "CREATE TABLE categories      (id VARCHAR(36) PRIMARY KEY, description VARCHAR(256));"
-            createTablesString += "CREATE TABLE anatomic_sites  (id VARCHAR(36) PRIMARY KEY, description VARCHAR(256));"
-            createTablesString += "CREATE TABLE diagnoses       (id VARCHAR(36) PRIMARY KEY, description VARCHAR(256));"
-            createTablesString += "CREATE TABLE subsites        (id VARCHAR(36) PRIMARY KEY, description VARCHAR(256));"
-            createTablesString += [
-                "CREATE TABLE dis_relationship_master (",
-                "    ID VARCHAR2(36) PRIMARY KEY,",
-                "    CATEGORY_ID VARCHAR2(36) CONSTRAINT CATEGORY_ID REFERENCES categories (id),",
-                "    ANATOMIC_SITE_ID VARCHAR2(36) CONSTRAINT ANATOMIC_SITE_ID REFERENCES anatomic_sites (id),",
-                "    DIAGNOSIS_ID VARCHAR2(36) CONSTRAINT DIAGNOSIS_ID REFERENCES diagnoses (id)",
-                ");"].join("");
-            createTablesString += [
-                "CREATE TABLE dis_relationship_site_subsite (",
-                "    ANATOMIC_SITE_ID VARCHAR2(36) CONSTRAINT ANATOMIC_SITE_ID REFERENCES anatomic_sites (id),",
-                "    ANATOMIC_SUBSITE_ID VARCHAR2(36) CONSTRAINT ANATOMIC_SUBSITE_ID REFERENCES subsites (id)",
-                ");"].join("");
-            CHTN.db.run(createTablesString);
-        },
-
-        _loadSQLData: function () {
-            var knownEntities = {}, knownSubsites = {};
-            CHTN.vocabulary.forEach(function (row) {
-                var insertStatement = "", subsiteStatement;
-                if (!knownEntities[row["AS Id"]]) {
-                    insertStatement += "INSERT INTO anatomic_sites VALUES ('"+row["AS Id"]+"', '"+row["Anatomic Site"]+"');";
-                    knownEntities[row["AS Id"]] = true;
-                }
-                if (!knownEntities[row["SubS Id"]]) {
-                    insertStatement += "INSERT INTO subsites VALUES ('"+row["SubS Id"]+"', '"+row["Subsite"]+"');";
-                    knownEntities[row["SubS Id"]] = true;
-                }
-                if (!knownEntities[row["Cat Id"]]) {
-                    insertStatement += "INSERT INTO categories VALUES ('"+row["Cat Id"]+"', '"+row["Category"]+"');";
-                    knownEntities[row["Cat Id"]] = true;
-                }
-                if (!knownEntities[row["DX Id"]]) {
-                    insertStatement += "INSERT INTO diagnoses VALUES ('"+row["DX Id"]+"', '"+row["Diagnosis"]+"');";
-                    knownEntities[row["DX Id"]] = true;
-                }
-                subsiteStatement = "INSERT INTO dis_relationship_site_subsite VALUES ('"+row["AS Id"]+"', '"+row["SubS Id"]+"');";
-                if (!knownSubsites[subsiteStatement]) {
-                    insertStatement += subsiteStatement;
-                    knownSubsites[subsiteStatement] = true;
-                }
-                insertStatement += "INSERT INTO dis_relationship_master VALUES ('"+row["Id"]+"', '"+row["Cat Id"]+"', '"+row["AS Id"]+"', '"+row["DX Id"]+"');";
-                CHTN.db.run(insertStatement);
-            });
         },
 
         showTables: function () {
@@ -143,7 +159,7 @@
                 "@vocab": root,
                 "chtn": root
             }
-            CHTN.vocabulary.forEach(function (row) {
+            CHTN.raw.json.forEach(function (row) {
                 var site, subsite, category, diagnosis, graph;
                 graph = {
                     "@context": context,
