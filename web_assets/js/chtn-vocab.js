@@ -32,7 +32,7 @@
             json: {},
             sql: "",
             rdf: "",
-            jsonld: {},
+            jsonld: false,
             text: ""
         },
 
@@ -70,7 +70,8 @@
             CHTN.groups.countByDiagnosis    = CHTN.dimensions.byDiagnosis.group().reduceCount();
         },
 
-        _initSQL: function () {
+        _init_sql: function () {
+            if (CHTN.raw.sql) return;
             CHTN._createSQLTables();
             CHTN._createSQLData();
             $("#raw-sql").text(CHTN.raw.sql)
@@ -102,6 +103,7 @@
             createTableStatement += "\n";
             CHTN.raw.sql += createTableStatement;
         },
+
 
         _createSQLData: function () {
             var knownEntities = {}, knownSubsites = {};
@@ -152,51 +154,74 @@
             });
         },
 
-        _toRDF: function () {
-            var root, context, docs = [];
+        _init_jsonld: function () {
+            var root, context, docs = [], jsonld = jsonldjs;
             root = "http://chtn.org/vocabulary/"+CHTN.version+"/"
             context = {
                 "@vocab": root,
                 "chtn": root
             }
             CHTN.raw.json.forEach(function (row) {
-                var site, subsite, category, diagnosis, graph;
-                graph = {
-                    "@context": context,
-                    "@id": "chtn:row/"+row.Id,
-                    "@graph": []
-                }
-                site = CHTN._extractEntity(row, "site")
-                subsite = CHTN._extractEntity(row, "subsite")
-                category = CHTN._extractEntity(row, "category")
-                diagnosis = CHTN._extractEntity(row, "diagnosis")
-                CHTN._annotateWithCompatibilityStatements([site, subsite, category, diagnosis])
-                graph["@graph"].push(site, subsite, category, diagnosis)
+                var graph = CHTN._createRowGraph(row, context);
                 docs.push(graph);
             });
-
-            var t0, t1, t2, t3;
-            console.log("Starting process at ", t0 = Date.now());
             jsonld.flatten(docs, function (err, flattened) {
-                t1 = Date.now();
-                console.log("Finished flattening after ", (t1-t0)/(1000), "seconds.");
-                CHTN.jsonld = flattened
-                jsonld.compact(flattened, context, function (err, compacted) {
-                    t3 = Date.now();
-                    console.log("Finished compacting after ", (t3-t1)/(1000), "seconds.");
-                    CHTN.jsonld = compacted;
-                    jsonld.normalize(compacted, {format: 'application/nquads'}, function(err, normalized) {
-                        t2 = Date.now();
-                        console.log("Finished normalizing after ", (t2-t3)/(1000), "seconds.");
-                        console.log("Finished everything after ", (t2-t0)/(1000), "seconds.");
-                        CHTN.rdf = normalized
-                        $("#raw-label").text("Raw RDF")
-                        $("#raw").text(CHTN.rdf)
-                    });
-                });
+                CHTN.raw.jsonld = flattened
+                $("#raw-jsonld").text(JSON.stringify(CHTN.raw.jsonld, null, 2));
+                // jsonld.compact(flattened, context, function (err, compacted) {
+                //     CHTN.raw.jsonld = compacted;
+                //     // jsonld.normalize(compacted, {format: 'application/nquads'}, function(err, normalized) {
+                //     //     t2 = Date.now();
+                //     //     console.log("Finished normalizing after ", (t2-t3)/(1000), "seconds.");
+                //     //     console.log("Finished everything after ", (t2-t0)/(1000), "seconds.");
+                //     //     CHTN.rdf = normalized
+                //     //     $("#raw-label").text("Raw RDF")
+                //     //     $("#raw").text(CHTN.rdf)
+                //     // });
+                //     $("#raw-jsonld").text(JSON.stringify(CHTN.raw.jsonld, null, 2));
+                // });
 
             });
 
+        },
+
+        _createRowGraph: function (row, context) {
+            var graph;
+            graph = {
+                "@context": context,
+                "@id": "chtn:row/"+row.Id,
+                "@graph": CHTN._createRowEntities(row)
+            };
+            return graph;
+        },
+
+        _createRowEntities: function (row) {
+            var site, subsite, category, diagnosis, entities = [];
+            site = CHTN._createRowEntity(row, "site");
+            subsite = CHTN._createRowEntity(row, "subsite");
+            category = CHTN._createRowEntity(row, "category");
+            diagnosis = CHTN._createRowEntity(row, "diagnosis");
+            entities = [site, subsite, category, diagnosis];
+            CHTN._createRowEntityCompatibleStatements(entities);
+            return entities;
+        },
+
+        _createRowEntity: function (row, type) {
+            if (row[CHTN.keys[type].id]) {
+                return {
+                    "@id": "chtn:"+row[CHTN.keys[type].id],
+                    "description": row[CHTN.keys[type].description]
+                };
+            } else return null;
+        },
+
+        _createRowEntityCompatibleStatements: function (entities) {
+            entities.forEach(function (entity) {
+                if (!entity) return;
+                var others = _.without(entities, entity, null)
+                entity.compatible = others.map(function (other) { return _.pick(other, "@id"); });
+            });
+            return "done";
         },
 
         saveRDF: function () {
@@ -206,23 +231,6 @@
             //saveAs(blob, "chtn-vocab.nq")
         },
 
-        _extractEntity: function (row, type) {
-            if (row[CHTN.keys[type].id]) {
-                return {
-                    "@id": "chtn:"+row[CHTN.keys[type].id],
-                    "description": row[CHTN.keys[type].description]
-                }
-            } else return null
-        },
-
-        _annotateWithCompatibilityStatements: function (entities) {
-            entities.forEach(function (entity) {
-                if (!entity) return;
-                var others = _.without(entities, entity)
-                entity.compatible = others.map(function (other) { return _.pick(other, "@id"); });
-            });
-            return "done";
-        },
 
         queries: {
             denormalize_dis_relationship_master: "SELECT rel.CATEGORY_ID, c.description, rel.ANATOMIC_SITE_ID, s.description, rel.DIAGNOSIS_ID, d.description FROM dis_relationship_master AS rel LEFT OUTER JOIN categories AS c ON rel.CATEGORY_ID = c.id LEFT OUTER JOIN anatomic_sites AS s ON rel.ANATOMIC_SITE_ID = s.id LEFT OUTER JOIN diagnoses AS d ON rel.DIAGNOSIS_ID = d.id",
@@ -236,5 +244,10 @@
     }
 
     CHTN._init();
+
+    $('a[data-toggle="tab"]').on('show.bs.tab', function (e) {
+        var initFunction = CHTN["_init_"+$(e.target).attr("aria-controls")];
+        if (typeof initFunction === "function") initFunction();
+    })
 
 })();
