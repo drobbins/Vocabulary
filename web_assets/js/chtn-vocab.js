@@ -151,13 +151,11 @@
                     "@graph": []
                 }
                 site = CHTN._extractEntity(row, "site")
-                graph["@graph"].push(site)
                 subsite = CHTN._extractEntity(row, "subsite")
-                graph["@graph"].push(subsite)
                 category = CHTN._extractEntity(row, "category")
-                graph["@graph"].push(category)
                 diagnosis = CHTN._extractEntity(row, "diagnosis")
-                graph["@graph"].push(diagnosis)
+                CHTN._annotateWithCompatibilityStatements([site, subsite, category, diagnosis])
+                graph["@graph"].push(site, subsite, category, diagnosis)
                 docs.push(graph);
             });
             jsonld.flatten(docs, function (err, flattened) {
@@ -174,15 +172,30 @@
         },
 
         _extractEntity: function (row, type) {
-            return {
-                "@id": "chtn:"+row[CHTN.keys[type].id],
-                "description": row[CHTN.keys[type].description]
-            }
+            if (row[CHTN.keys[type].id]) {
+                return {
+                    "@id": "chtn:"+row[CHTN.keys[type].id],
+                    "description": row[CHTN.keys[type].description]
+                }
+            } else return null
+        },
+
+        _annotateWithCompatibilityStatements: function (entities) {
+            entities.forEach(function (entity) {
+                if (!entity) return;
+                var others = _.without(entities, entity)
+                entity.compatible = others.map(function (other) { return _.pick(other, "@id"); });
+            });
+            return "done";
         },
 
         queries: {
             denormalize_dis_relationship_master: "SELECT rel.CATEGORY_ID, c.description, rel.ANATOMIC_SITE_ID, s.description, rel.DIAGNOSIS_ID, d.description FROM dis_relationship_master AS rel LEFT OUTER JOIN categories AS c ON rel.CATEGORY_ID = c.id LEFT OUTER JOIN anatomic_sites AS s ON rel.ANATOMIC_SITE_ID = s.id LEFT OUTER JOIN diagnoses AS d ON rel.DIAGNOSIS_ID = d.id",
             denormalize_dis_relationship_site_subsite: "SELECT rel.ANATOMIC_SITE_ID, s.description, rel.ANATOMIC_SUBSITE_ID, ss.description FROM dis_relationship_site_subsite AS rel LEFT OUTER JOIN anatomic_sites AS s ON rel.ANATOMIC_SITE_ID = s.id LEFT OUTER JOIN subsites AS ss ON rel.ANATOMIC_SUBSITE_ID = ss.id"
+        },
+
+        printSome: function (arr) {
+            console.log(JSON.stringify(arr.slice(0,5), null, 4));
         }
 
     }
