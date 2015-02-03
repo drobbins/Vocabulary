@@ -158,17 +158,36 @@
                 graph["@graph"].push(site, subsite, category, diagnosis)
                 docs.push(graph);
             });
+
+            var t0, t1, t2, t3;
+            console.log("Starting process at ", t0 = Date.now());
             jsonld.flatten(docs, function (err, flattened) {
+                t1 = Date.now();
+                console.log("Finished flattening after ", (t1-t0)/(1000), "seconds.");
                 CHTN.jsonld = flattened
-                // jsonld.compact(flattened, context, function (err, compacted) {
-                //     CHTN.jsonld = compacted;
-                // });
+                jsonld.compact(flattened, context, function (err, compacted) {
+                    t3 = Date.now();
+                    console.log("Finished compacting after ", (t3-t1)/(1000), "seconds.");
+                    CHTN.jsonld = compacted;
+                    jsonld.normalize(compacted, {format: 'application/nquads'}, function(err, normalized) {
+                        t2 = Date.now();
+                        console.log("Finished normalizing after ", (t2-t3)/(1000), "seconds.");
+                        console.log("Finished everything after ", (t2-t0)/(1000), "seconds.");
+                        CHTN.rdf = normalized
+                        $("#raw-label").text("Raw RDF")
+                        $("#raw").text(CHTN.rdf)
+                    });
+                });
+
             });
-            jsonld.normalize(docs, {format: 'application/nquads'}, function(err, normalized) {
-                CHTN.rdf = normalized
-                $("#raw-label").text("Raw RDF")
-                $("#raw").text(CHTN.rdf)
-            });
+
+        },
+
+        saveRDF: function () {
+            var blob = new Blob([CHTN.rdf], {type: "application/n-quads;charset=utf-8"})
+            var href = "data:application/n-quads;base64,"+atob(CHTN.rdf || "")
+            $("<a>").attr("href", href).appendTo("body");
+            //saveAs(blob, "chtn-vocab.nq")
         },
 
         _extractEntity: function (row, type) {
