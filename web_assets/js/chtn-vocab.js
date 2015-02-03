@@ -11,19 +11,23 @@
         keys: {
             site: {
                 id: "AS Id",
-                description: "Anatomic Site"
+                description: "Anatomic Site",
+                type: "Site"
             },
             subsite: {
                 id: "SubS Id",
-                description: "Subsite"
+                description: "Subsite",
+                type: "Subsite"
             },
             category: {
                 id: "Cat Id",
-                description: "Category"
+                description: "Category",
+                type: "Category"
             },
             diagnosis: {
                 id: "DX Id",
-                description: "Diagnosis"
+                description: "Diagnosis",
+                type: "Diagnosis"
             }
         },
 
@@ -154,45 +158,56 @@
             });
         },
 
-        _init_jsonld: function () {
-            var root, context, docs = [], jsonld = jsonldjs;
+        _init_jsonld: function (callback) {
+            var root, context, jsonld = jsonldjs, graph;
             root = "http://chtn.org/vocabulary/"+CHTN.version+"/"
             context = {
                 "@vocab": root,
                 "chtn": root
             }
-            CHTN.raw.json.forEach(function (row) {
-                var graph = CHTN._createRowGraph(row, context);
-                docs.push(graph);
-            });
-            jsonld.flatten(docs, function (err, flattened) {
-                CHTN.raw.jsonld = flattened
-                $("#raw-jsonld").text(JSON.stringify(CHTN.raw.jsonld, null, 2));
-                // jsonld.compact(flattened, context, function (err, compacted) {
-                //     CHTN.raw.jsonld = compacted;
-                //     // jsonld.normalize(compacted, {format: 'application/nquads'}, function(err, normalized) {
-                //     //     t2 = Date.now();
-                //     //     console.log("Finished normalizing after ", (t2-t3)/(1000), "seconds.");
-                //     //     console.log("Finished everything after ", (t2-t0)/(1000), "seconds.");
-                //     //     CHTN.rdf = normalized
-                //     //     $("#raw-label").text("Raw RDF")
-                //     //     $("#raw").text(CHTN.rdf)
-                //     // });
-                //     $("#raw-jsonld").text(JSON.stringify(CHTN.raw.jsonld, null, 2));
-                // });
-
+            // graph = CHTN._createGraphWithRowGraphs(context);
+            graph = CHTN._createGraph(context);
+            jsonld.flatten(graph, function (err, flattened) {
+                CHTN.raw.jsonld = flattened;
+                jsonld.compact(flattened, context, function (err, compacted){
+                    CHTN.raw.jsonld = compacted;
+                    $("#raw-jsonld").text(JSON.stringify(CHTN.raw.jsonld, null, 2));
+                    if (typeof callback === "function") callback();
+                });
+                // $("#raw-jsonld").text(JSON.stringify(CHTN.raw.jsonld, null, 2));
             });
 
         },
 
+        _createGraphWithRowGraphs: function (context) {
+            var graph = []
+            CHTN.raw.json.forEach(function (row) {
+                var rowGraph = CHTN._createRowGraph(row, context);
+                graph.push(rowGraph);
+            });
+            return graph;
+        },
+
+        _createGraph: function (context) {
+            var graph = []
+            CHTN.raw.json.forEach(function (row) {
+                var entityGraphs = CHTN._createRowEntities(row);
+                entityGraphs.forEach(function (entityGraph) {
+                    if (!entityGraph) return;
+                    entityGraph["@context"] = context;
+                    graph.push(entityGraph);
+                });
+            });
+            return graph;
+        },
+
         _createRowGraph: function (row, context) {
-            var graph;
-            graph = {
+            var rowGraph = {
                 "@context": context,
                 "@id": "chtn:row/"+row.Id,
                 "@graph": CHTN._createRowEntities(row)
             };
-            return graph;
+            return rowGraph;
         },
 
         _createRowEntities: function (row) {
@@ -210,7 +225,8 @@
             if (row[CHTN.keys[type].id]) {
                 return {
                     "@id": "chtn:"+row[CHTN.keys[type].id],
-                    "description": row[CHTN.keys[type].description]
+                    "description": row[CHTN.keys[type].description],
+                    "@type": "chtn:"+CHTN.keys[type].type
                 };
             } else return null;
         },
@@ -222,6 +238,23 @@
                 entity.compatible = others.map(function (other) { return _.pick(other, "@id"); });
             });
             return "done";
+        },
+
+        _init_ntriples: function () {
+            if (CHTN.raw.ntriples) return;
+            if (!CHTN.raw.jsonld) CHTN._init_jsonld(CHTN._createNTriples);
+            else CHTN._createNTriples();
+        },
+
+        _createNTriples: function () {
+            var t0 = Date.now();
+            console.log("Started normalizing CHTN.raw.jsonld");
+            jsonldjs.normalize(CHTN.raw.jsonld, {format: 'application/nquads'}, function(err, normalized) {
+                var t1 = Date.now();
+                console.log("Finished normalizing CHTN.raw.jsonld in", (t1-t0)/1000, "seconds.");
+                CHTN.raw.ntriples = normalized;
+                $("#raw-ntriples").text(CHTN.raw.ntriples);
+            });
         },
 
         saveRDF: function () {
