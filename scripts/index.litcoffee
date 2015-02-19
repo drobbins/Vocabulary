@@ -4,6 +4,7 @@ Builds JSON, JSON-LD, and SQL representations of the CHTN Vocabulary from the ta
 
     tabularFileName = "CHTN Vocab-Disease List.txt"
     jsonFileName    = "CHTN Vocab-Disease List.json"
+    sqlFileName     = "CHTN Vocab-Disease List.sql"
 
 ## 1) Read in the raw file.
 Read in the Tab-Separated version of the vocabulary using [readFileSync][].
@@ -27,6 +28,13 @@ We'll save the stringified JSON, pretty-printed with a tab-width of 2.
     fs.writeFile "../#{jsonFileName}", jsonString, (err) ->
         if err then throw err else console.log "Saved #{jsonFileName}"
 
+## 3) Parse SQL
+The SQL representation is parsed from the JSON representation.
+
+    jsonToSql = require "./parsers/jsonToSql"
+    jsonToSql vocabularyJson, (err, vocabularySql) ->
+        fs.writeFile "../#{sqlFileName}", vocabularySql, (err) ->
+            if err then throw err else console.log "Saved #{sqlFileName}"
 
 [readFileSync]: http://nodejs.org/api/fs.html#fs_fs_readfilesync_filename_options
 [d3]: http://d3js.org/
