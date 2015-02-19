@@ -19,6 +19,8 @@
   "homepage": "https://github.com/CooperativeHumanTissueNetwork/Vocabulary",
   "dependencies": {
     "coffee-script": "^1.9.1",
-    "d3": "^3.5.5"
+    "d3": "^3.5.5",
+    "jsonld": "^0.3.22",
+    "underscore": "^1.7.0"
   }
 }
