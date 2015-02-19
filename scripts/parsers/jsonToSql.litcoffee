@@ -1,4 +1,4 @@
-# jsonToSql Parser
+# CHTN Vocabulary JSON to SQL Parser
 
 Parses the JSON representation of the CHTN Vocabulary to SQL.
 
