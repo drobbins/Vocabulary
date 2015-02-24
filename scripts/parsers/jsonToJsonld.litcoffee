@@ -104,7 +104,9 @@ of the [jsonld.js][] library.
 
         graph = createGraph vocabularyJson, context
         jsonld.flatten graph, (err, flattenedGraph) ->
-            if err then callback err else callback null, flattenedGraph
+            if err then callback err
+            jsonld.compact flattenedGraph, context, (err, compactedGraph) ->
+                if err then callback err else callback null, compactedGraph
 
 [JSON-LD]: http://json-ld.org/ "JSON-LD Homepage"
 [context]: http://www.w3.org/TR/json-ld/#the-context
