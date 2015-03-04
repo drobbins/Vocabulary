@@ -55,7 +55,6 @@ The [JSON-LD][] representation is parsed from the JSON representation, then the
         jsonld.normalize vocabularyJsonld, format: "application/nquads", (err, result) ->
             if err then throw err
             vocabularyNTriples = result
-            console.log result.slice 0, 100
             fs.writeFile "../#{ntriplesFileName}", vocabularyNTriples, (err) ->
                 if err then throw err else console.log "Saved #{ntriplesFileName}"
 
