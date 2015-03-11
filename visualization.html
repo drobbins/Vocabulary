@@ -7,7 +7,7 @@
 
     .link {
         fill: none;
-        stroke-width: 1.5px;
+        stroke-width: 0.5px;
     }
 
     .axis, .node {
@@ -114,6 +114,11 @@
 
             var entities = graph["@graph"], entitiesById = {}, links = [], formatNumber = d3.format(",d");
 
+            // Filter out the Subsites
+            entities = entities.filter(function (d) {
+                return d["@type"] !== "Subsite";
+            });
+
             // Construct an index by Entity Id
             entities.forEach(function (d) {
                 d.connectors = [];
@@ -123,6 +128,7 @@
             // Convert the compatability relationships into links with sources and targets
             entities.forEach(function (source) {
                 var processCompatibility = function (source, target) {
+                    if (!target) return; //skip missing targets, e.g. subsites.
                     if (!source.source) source.connectors.push(source.source = {node: source, degree: 0});
                     if (!target.target) target.connectors.push(target.target = {node: target, degree: 0});
                     links.push({source: source.source, target: target.target});
@@ -179,6 +185,29 @@
 
             // Draw the links.
             svg.selectAll(".link")
+                    .data(links)
+                .enter().append("path")
+                    .attr("class", "link")
+                    .attr("d", d3.hive.link()
+                        .angle(function (d){
+                            return angle(d.node["@type"]);
+                        })
+                        .radius(function (d){
+                            return radius(d.node.index);
+                        })
+                    )
+                    .style("stroke", function (d) { return color(d.source.x); });
+
+            // Draw the nodes.
+            svg.selectAll(".node")
+                    .data(entities)
+                .enter().append("circle")
+                    .attr("class", "node")
+                    .attr("transform", function (d) { return "rotate("+degrees(angle(d["@type"]))+")"})
+                    .attr("cx", function (d) { return radius(d.index); })
+                    .attr("r", 4)
+                    .style("fill", function (d) { return color(d["@type"]); })
+
 
         });
     </script>
