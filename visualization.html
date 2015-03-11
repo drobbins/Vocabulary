@@ -22,7 +22,7 @@
     <p id="chart"></p>
     <script src="http://d3js.org/d3.v3.min.js"></script>
     <script src="http://d3js.org/d3.hive.v0.min.js"></script>
-    <script>
+    <!--script>
 
         var width = 960,
             height = 850,
@@ -71,8 +71,8 @@
           .enter().append("path")
             .attr("class", "link")
             .attr("d", d3.hive.link()
-            .angle(function(d) { return angle(d.x); })
-            .radius(function(d) { return radius(d.y); }))
+                .angle(function(d) { return angle(d.x); })
+                .radius(function(d) { return radius(d.y); }))
             .style("stroke", function(d) { return color(d.source.x); });
 
         svg.selectAll(".node")
@@ -88,10 +88,14 @@
           return radians / Math.PI * 180 - 90;
         }
 
-    </script>
+    </script-->
     <script>
 
-        d3.json("CHTN Vocab-Disease List.jsonld", function (entities) {
+        function degrees(radians) {
+          return radians / Math.PI * 180 - 90;
+        }
+
+        d3.json("CHTN Vocab-Disease List.jsonld", function (graph) {
             var width = 960,
                 height = 850,
                 innerRadius = 40,
@@ -100,7 +104,7 @@
                 minorAngle = 1 * Math.PI / 12;
 
             var angle = d3.scale.ordinal()
-                .domain(["http://chtn.org/vocabulary1.0.0/Site", "http://chtn.org/vocabulary1.0.0/Diagnosis", "http://chtn.org/vocabulary1.0.0/Category"])
+                .domain(["Site", "Diagnosis", "Category"])
                 .range([0, majorAngle, 2 * majorAngle]);
 
             var radius = d3.scale.linear()
@@ -108,13 +112,7 @@
 
             var color = d3.scale.category10();
 
-            var svg = d3.select("#chart").append("svg")
-                    .attr("width", width)
-                    .attr("height", height)
-                .append("g")
-                    .attr("transform", "translate(" + outerRadius * .20 + "," + outerRadius * .57 + ")");
-
-            var entitiesById = {}, links = [], formatNumber = d3.format(",d");
+            var entities = graph["@graph"], entitiesById = {}, links = [], formatNumber = d3.format(",d");
 
             // Construct an index by Entity Id
             entities.forEach(function (d) {
@@ -124,12 +122,22 @@
 
             // Convert the compatability relationships into links with sources and targets
             entities.forEach(function (source) {
-                source["http://chtn.org/vocabulary1.0.0/compatible"].forEach(function (targetObject) {
-                    var target = entitiesById[targetObject["@id"]];
+                var processCompatibility = function (source, target) {
                     if (!source.source) source.connectors.push(source.source = {node: source, degree: 0});
                     if (!target.target) target.connectors.push(target.target = {node: target, degree: 0});
                     links.push({source: source.source, target: target.target});
-                });
+                }
+                if (source.compatible.forEach) {
+                    // If there are many compatibility statements, they are in an array.
+                    source.compatible.forEach(function (targetObject) {
+                        var target = entitiesById[targetObject["@id"]];
+                        processCompatibility(source, target);
+                    });
+                } else {
+                    // If there is just one compatibility statement, it's an object
+                    var target = entitiesById[source.compatible["@id"]];
+                    processCompatibility(source, target);
+                }
             });
 
             // Initialize the info display
@@ -144,7 +152,7 @@
 
             // Entities by type
             var entitiesByType = d3.nest()
-                .key(function (d) { return d["@type"][0]; })
+                .key(function (d) { return d["@type"]; })
                 .sortKeys(d3.ascending)
                 .entries(entities);
             entitiesByType = entitiesByType.slice(0,3);
@@ -168,6 +176,10 @@
                     .attr("transform", function(d) { return "rotate(" + degrees(angle(d.key)) + ")"; })
                     .attr("x1", radius(-2))
                     .attr("x2", function(d) { return radius(d.values.length + 2); });
+
+            // Draw the links.
+            svg.selectAll(".link")
+
         });
     </script>
 </body>
