@@ -23,7 +23,35 @@ number of dependencies; we'll also use it to generate images later.
     vocabularyJson = d3.tsv.parse vocabularyCsv
     console.log "Parsed #{tabularFileName} in to #{vocabularyJson.length} rows."
 
-### 2-a) Save the Parsed JSON
+### 2-a) Split Diagnosis Modifiers from Diagnoses
+This will also require generating a new Diagnosis and Diagnosis Modifier ID,
+since the build in `D1234` ID is for the Diagnosis + Modifier combo. These
+ID's are generated sequentially, starting at D1 and DM1
+
+    diagnoses           = {} #Index of diagnoses
+    diagnosisModifiers  = {} #Index of diagnosis modifiers
+    vocabularyJson.forEach (row) ->
+        if not row["Diagnosis"] then return
+        # Split diagnosis and modifier
+        [diagnosis, modifier]     = row["Diagnosis"].split(" \\ ")
+
+        # Save combined diagnosis and id
+        row["Combined Diagnosis"] = row["Diagnosis"]
+        row["Combined DX Id"]     = row["DX Id"]
+
+        # Index and save diagnosis and diagnosis ID
+        if not diagnoses[diagnosis] then diagnoses[diagnosis] = "D#{Object.keys(diagnoses).length+1}"
+        row["DX Id"]     = diagnoses[diagnosis]
+        row["Diagnosis"] = diagnosis
+
+        # Index and save modifier and modifier ID
+        if not diagnosisModifiers[modifier] then diagnosisModifiers[modifier] = "DM#{Object.keys(diagnosisModifiers).length+1}"
+        row["DXM Id"]     = diagnosisModifiers[modifier]
+        row["Diagnosis Modifier"] = modifier
+
+
+
+### 2-b) Save the Parsed JSON
 We'll save the stringified JSON, pretty-printed with a tab-width of 2.
     
     jsonString = JSON.stringify vocabularyJson, null, 2

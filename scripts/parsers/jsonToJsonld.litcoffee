@@ -40,6 +40,12 @@ We'll use the following keys to pull the data out of the rows.
             id: 'DX Id'
             description: 'Diagnosis'
             type: 'Diagnosis'
+          diagnosisModifer:
+            id: 'DXM Id'
+            type: 'DiagnosisModifier'
+          combinedDiagnosis:
+            id: "Combined DX Id"            
+            type: "CombinedDiagnosis"
 
 ## 1-a) createRowEntity
 `createRowEntity` creates an entity (site, subsite, category, or diagnosis)
@@ -71,15 +77,19 @@ given a `row` and a `type`.
 compatibility statements.
 
         createRowEntities = (row) ->
-            site      = createRowEntity row, 'site'
-            subsite   = createRowEntity row, 'subsite'
-            category  = createRowEntity row, 'category'
-            diagnosis = createRowEntity row, 'diagnosis'
+            site              = createRowEntity row, 'site'
+            subsite           = createRowEntity row, 'subsite'
+            category          = createRowEntity row, 'category'
+            diagnosis         = createRowEntity row, 'diagnosis'
+            diagnosisModifer  = createRowEntity row, 'diagnosisModifer'
+            combinedDiagnosis = createRowEntity row, 'combinedDiagnosis'
             entities = [
                 site
                 subsite
                 category
                 diagnosis
+                diagnosisModifer
+                combinedDiagnosis
             ]
             createRowEntityCompatibleStatements entities
             return entities
