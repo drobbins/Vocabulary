@@ -138,6 +138,110 @@ d3.json("CHTN Vocab-Disease List.jsonld", function (graph) {
                 .style("fill", function (d) { return color(d["@type"]); })
     };
 
+    vis.hive2 = function hive2() {
+
+        var innerRadius = 40,
+            outerRadius = 640*7,
+            adjustmentAngle = -1 * Math.PI / 6,
+            majorAngle = 2 * Math.PI / 3, // 1/3 of a circle
+            minorAngle = 1 * Math.PI / 12;
+
+        var angle = d3.scale.ordinal()
+            .domain(["Site", "Diagnosis", "Category"])
+            .range([
+                adjustmentAngle,
+                majorAngle + adjustmentAngle,
+                2 * majorAngle + adjustmentAngle
+            ]);
+
+        var angle2 = function (d) {
+            var type = d["@type"], d_angle = angle(type);
+            if (type === "Site" || type === "Category") {
+                return d_angle;
+            } else {
+                return d.index % 2 ? d_angle + minorAngle : d_angle - minorAngle;
+            }
+        };
+
+        var translateDiagnoses = function (d) {
+            var type = d["@type"], cy;
+            if (type === "Diagnosis") {
+                cy = d.index % 2 ? 2 : -2;
+                return "translate(0,"+cy+") ";
+            } else {
+                return "";
+            }
+        }
+
+        var radius = d3.scale.linear()
+            .range([innerRadius, outerRadius]);
+
+        var color = d3.scale.category10();
+
+        var formatNumber = d3.format(",d");
+
+        // Initialize the info display
+        var info = d3.select("#info")
+            .text(defaultInfo = "Showing " + formatNumber(links.length) + " dependencies among " + formatNumber(entities.length) + " entities.")
+
+        var svg = d3.select(charSelector).append("svg")
+                .attr("width", width)
+                .attr("height", height)
+            .append("g")
+              .attr("transform", "translate(" + 640 * .20 + "," + 640 * .57 + ")");
+
+        // Entities by type
+        var entitiesByType = d3.nest()
+            .key(function (d) { return d["@type"]; })
+            .sortKeys(d3.ascending)
+            .entries(entities);
+        entitiesByType = entitiesByType.slice(0,3);
+
+        // Compute the rank for each type.
+        entitiesByType.forEach(function (type) {
+            var count = 0;
+            type.values.forEach(function (d,i) {
+                d.index = count++;
+            });
+        });
+
+        // Set the radius domain.
+        radius.domain(d3.extent(entities, function(d) { return d.index; }));
+
+        // Draw the axes.
+        svg.selectAll(".axis")
+                .data(entitiesByType)
+            .enter().append("line")
+                .attr("class", "axis")
+                .attr("transform", function(d) { return "rotate(" + degrees(angle(d.key)) + ")"; })
+                .attr("x1", radius(-2))
+                .attr("x2", function(d) { return radius(d.values.length + 2); });
+
+        // Draw the links.
+        svg.selectAll(".link")
+                .data(links)
+            .enter().append("path")
+                .attr("class", "link")
+                .attr("d", d3.hive.link()
+                    .angle(function (d){
+                        return angle(d.node["@type"]);
+                    })
+                    .radius(function (d){
+                        return radius(d.node.index);
+                    })
+                );
+
+        // Draw the nodes.
+        svg.selectAll(".node")
+                .data(entities)
+            .enter().append("circle")
+                .attr("class", "node")
+                .attr("transform", function (d) { return translateDiagnoses(d) + "rotate("+degrees(angle(d["@type"]))+")"})
+                .attr("cx", function (d) { return radius(d.index); })
+                .attr("r", 4)
+                .style("fill", function (d) { return color(d["@type"]); })
+    };
+
     vis.bundle = function bundle() {
         var rx = width / 2,
             ry = height / 2,
