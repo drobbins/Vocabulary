@@ -23,7 +23,7 @@ d3.json("CHTN Vocab-Disease List.jsonld", function (graph) {
 
     // Filter out the Subsites
     entities = entities.filter(function (d) {
-        return d["@type"] !== "Subsite";
+        return d["@type"] !== "Subsite" && d["@type"] !== "CombinedDiagnosis" && d["@type"] !== "DiagnosisModifier";
     });
 
     // Construct an index by Entity Id
@@ -56,7 +56,7 @@ d3.json("CHTN Vocab-Disease List.jsonld", function (graph) {
     vis.hive = function hive() {
 
         var innerRadius = 40,
-            outerRadius = 640*7,
+            outerRadius = 640,
             adjustmentAngle = -1 * Math.PI / 6,
             majorAngle = 2 * Math.PI / 3, // 1/3 of a circle
             minorAngle = 1 * Math.PI / 12;
@@ -141,7 +141,7 @@ d3.json("CHTN Vocab-Disease List.jsonld", function (graph) {
     vis.hive2 = function hive2() {
 
         var innerRadius = 40,
-            outerRadius = 640*7,
+            outerRadius = 640*3,
             adjustmentAngle = -1 * Math.PI / 6,
             majorAngle = 2 * Math.PI / 3, // 1/3 of a circle
             minorAngle = 1 * Math.PI / 12;
