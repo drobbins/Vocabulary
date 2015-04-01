@@ -9,11 +9,8 @@ var vis = CHTN.vis
 d3.json("CHTN Vocab-Disease List.jsonld", function (graph) {
 
     // Overall Settings
-
-    var scalingFactor = 2.25
-
-    var width = 960*scalingFactor,
-        height = 850*scalingFactor,
+    var width = 960,
+        height = 850,
         chartSelector = "#chart",
         infoSelector = "#info";
 
@@ -149,6 +146,10 @@ d3.json("CHTN Vocab-Disease List.jsonld", function (graph) {
             majorAngle = 2 * Math.PI / 3, // 1/3 of a circle
             minorAngle = 1 * Math.PI / 12;
 
+        var scalingFactor = 2.25;
+        localWidth = width*scalingFactor;
+        localHeight = height*scalingFactor;
+
         var angle = d3.scale.ordinal()
             .domain(["Site", "Diagnosis", "Category"])
             .range([
@@ -188,8 +189,8 @@ d3.json("CHTN Vocab-Disease List.jsonld", function (graph) {
             .text(defaultInfo = "Showing " + formatNumber(links.length) + " dependencies among " + formatNumber(entities.length) + " entities.")
 
         var svg = d3.select(chartSelector).append("svg")
-                .attr("width", width)
-                .attr("height", height)
+                .attr("width", localWidth)
+                .attr("height", localHeight)
             .append("g")
               .attr("transform", "translate(" + 200 + "," + 640 + ")"); //TODO Make Dynamic (e.g. "translate(" + outerRadius * .20 + "," + outerRadius * .50 + ")") 
 
