@@ -40,6 +40,14 @@ We'll use the following keys to pull the data out of the rows.
             id: 'DX Id'
             description: 'Diagnosis'
             type: 'Diagnosis'
+          diagnosisModifer:
+            id: 'DXM Id'
+            type: 'DiagnosisModifier'
+            description: 'Diagnosis Modifier'
+          combinedDiagnosis:
+            id: "Combined DX Id"            
+            type: "CombinedDiagnosis"
+            description: "Combined Diagnosis"
 
 ## 1-a) createRowEntity
 `createRowEntity` creates an entity (site, subsite, category, or diagnosis)
@@ -71,15 +79,19 @@ given a `row` and a `type`.
 compatibility statements.
 
         createRowEntities = (row) ->
-            site      = createRowEntity row, 'site'
-            subsite   = createRowEntity row, 'subsite'
-            category  = createRowEntity row, 'category'
-            diagnosis = createRowEntity row, 'diagnosis'
+            site              = createRowEntity row, 'site'
+            subsite           = createRowEntity row, 'subsite'
+            category          = createRowEntity row, 'category'
+            diagnosis         = createRowEntity row, 'diagnosis'
+            diagnosisModifer  = createRowEntity row, 'diagnosisModifer'
+            combinedDiagnosis = createRowEntity row, 'combinedDiagnosis'
             entities = [
                 site
                 subsite
                 category
                 diagnosis
+                diagnosisModifer
+                combinedDiagnosis
             ]
             createRowEntityCompatibleStatements entities
             return entities
@@ -104,7 +116,9 @@ of the [jsonld.js][] library.
 
         graph = createGraph vocabularyJson, context
         jsonld.flatten graph, (err, flattenedGraph) ->
-            if err then callback err else callback null, flattenedGraph
+            if err then callback err
+            jsonld.compact flattenedGraph, context, (err, compactedGraph) ->
+                if err then callback err else callback null, compactedGraph
 
 [JSON-LD]: http://json-ld.org/ "JSON-LD Homepage"
 [context]: http://www.w3.org/TR/json-ld/#the-context
