@@ -9,9 +9,12 @@ var vis = CHTN.vis
 d3.json("CHTN Vocab-Disease List.jsonld", function (graph) {
 
     // Overall Settings
-    var width = 960,
-        height = 850,
-        charSelector = "#chart",
+
+    var scalingFactor = 2.25
+
+    var width = 960*scalingFactor,
+        height = 850*scalingFactor,
+        chartSelector = "#chart",
         infoSelector = "#info";
 
     var entities = graph["@graph"], 
@@ -80,7 +83,7 @@ d3.json("CHTN Vocab-Disease List.jsonld", function (graph) {
         var info = d3.select("#info")
             .text(defaultInfo = "Showing " + formatNumber(links.length) + " dependencies among " + formatNumber(entities.length) + " entities.")
 
-        var svg = d3.select(charSelector).append("svg")
+        var svg = d3.select(chartSelector).append("svg")
                 .attr("width", width)
                 .attr("height", height)
             .append("g")
@@ -142,7 +145,7 @@ d3.json("CHTN Vocab-Disease List.jsonld", function (graph) {
 
         var innerRadius = 40,
             outerRadius = 640*3,
-            adjustmentAngle = -1 * Math.PI / 6,
+            adjustmentAngle = 0, //-1 * Math.PI / 6,
             majorAngle = 2 * Math.PI / 3, // 1/3 of a circle
             minorAngle = 1 * Math.PI / 12;
 
@@ -184,11 +187,11 @@ d3.json("CHTN Vocab-Disease List.jsonld", function (graph) {
         var info = d3.select("#info")
             .text(defaultInfo = "Showing " + formatNumber(links.length) + " dependencies among " + formatNumber(entities.length) + " entities.")
 
-        var svg = d3.select(charSelector).append("svg")
+        var svg = d3.select(chartSelector).append("svg")
                 .attr("width", width)
                 .attr("height", height)
             .append("g")
-              .attr("transform", "translate(" + 640 * .20 + "," + 640 * .57 + ")");
+              .attr("transform", "translate(" + 200 + "," + 640 + ")"); //TODO Make Dynamic (e.g. "translate(" + outerRadius * .20 + "," + outerRadius * .50 + ")") 
 
         // Entities by type
         var entitiesByType = d3.nest()
@@ -263,7 +266,7 @@ d3.json("CHTN Vocab-Disease List.jsonld", function (graph) {
             .radius(function (d) { return d.y; })
             .angle(function (d) { return d.x / 180 * Math.PI; });
 
-        var svg = d3.select(charSelector).append("svg")
+        var svg = d3.select(chartSelector).append("svg")
                 .attr("width", width)
                 .attr("height", height)
             .append("g")
@@ -290,7 +293,7 @@ d3.json("CHTN Vocab-Disease List.jsonld", function (graph) {
             .on("tick", tick)
             .start();
 
-        var svg = d3.select(charSelector).append("svg")
+        var svg = d3.select(chartSelector).append("svg")
                 .attr("width", width)
                 .attr("height", height);
 
@@ -338,7 +341,7 @@ d3.json("CHTN Vocab-Disease List.jsonld", function (graph) {
     }
 
     vis.clear = function clear() {
-        document.querySelector(charSelector).innerHTML = "";
+        document.querySelector(chartSelector).innerHTML = "";
         document.querySelector(infoSelector).innerHTML = "";
     }
 
