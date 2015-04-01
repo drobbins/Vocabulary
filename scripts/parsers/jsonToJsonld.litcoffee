@@ -43,9 +43,11 @@ We'll use the following keys to pull the data out of the rows.
           diagnosisModifer:
             id: 'DXM Id'
             type: 'DiagnosisModifier'
+            description: 'Diagnosis Modifier'
           combinedDiagnosis:
             id: "Combined DX Id"            
             type: "CombinedDiagnosis"
+            description: "Combined Diagnosis"
 
 ## 1-a) createRowEntity
 `createRowEntity` creates an entity (site, subsite, category, or diagnosis)

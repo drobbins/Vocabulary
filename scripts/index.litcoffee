@@ -37,7 +37,7 @@ ID's are generated sequentially, starting at D1 and DM1
 
         # Save combined diagnosis and id
         row["Combined Diagnosis"] = row["Diagnosis"]
-        row["Combined DX Id"]     = row["DX Id"]
+        row["Combined DX Id"]     = "C#{row["DX Id"]}"
 
         # Index and save diagnosis and diagnosis ID
         if not diagnoses[diagnosis] then diagnoses[diagnosis] = "D#{Object.keys(diagnoses).length+1}"
@@ -47,7 +47,7 @@ ID's are generated sequentially, starting at D1 and DM1
         # Index and save modifier and modifier ID
         if not diagnosisModifiers[modifier] then diagnosisModifiers[modifier] = "DM#{Object.keys(diagnosisModifiers).length+1}"
         row["DXM Id"]     = diagnosisModifiers[modifier]
-        row["Diagnosis Modifier"] = modifier
+        row["Diagnosis Modifier"] = modifier or ""
 
 
 
