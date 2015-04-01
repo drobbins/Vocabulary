@@ -232,7 +232,9 @@ d3.json("CHTN Vocab-Disease List.jsonld", function (graph) {
                     .radius(function (d){
                         return radius(d.node.index);
                     })
-                );
+                )
+                .on("mouseover", linkMouseover)
+                .on("mouseout", mouseout);
 
         // Draw the nodes.
         svg.selectAll(".node")
@@ -243,6 +245,30 @@ d3.json("CHTN Vocab-Disease List.jsonld", function (graph) {
                 .attr("cx", function (d) { return radius(d.index); })
                 .attr("r", 4)
                 .style("fill", function (d) { return color(d["@type"]); })
+                .on("mouseover", nodeMouseover)
+                .on("mouseout", mouseout);
+
+        // Highlight the link and connected nodes on mouseover.
+        function linkMouseover(d) {
+            svg.selectAll(".link").classed("active", function(p) { return p === d; });
+            svg.selectAll(".node circle").classed("active", function(p) { return p === d.source || p === d.target; });
+            info.text(d.source.node.description + " → " + d.target.node.description);
+        }
+
+        // Highlight the node and connected links on mouseover.
+        function nodeMouseover(d) {
+            svg.selectAll(".link").classed("active", function(p) {
+                return p.source.node === d || p.target.node === d;
+            });
+            d3.select(this).classed("active", true);
+            info.text(d["@type"] + " " + d["@id"] +" - " + d.description);
+        }
+
+        // Clear any highlighted nodes or links.
+        function mouseout() {
+            svg.selectAll(".active").classed("active", false);
+            info.text(defaultInfo);
+        }
     };
 
     vis.bundle = function bundle() {
