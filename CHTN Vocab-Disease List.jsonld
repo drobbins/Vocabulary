@@ -1,7 +1,7 @@
 {
   "@context": {
-    "@vocab": "http://chtn.org/vocabulary1.0.0/",
-    "chtn": "http://chtn.org/vocabulary1.0.0/"
+    "@vocab": "http://chtn.org/vocabulary/1.0.0/",
+    "chtn": "http://chtn.org/vocabulary/1.0.0/"
   },
   "@graph": [
     {

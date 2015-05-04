@@ -15,7 +15,7 @@ Parses the JSON representation of the CHTN Vocabulary to [JSON-LD][].
 the context here. `root` is the URI-prefix for all CHTN entities; we also
 define the `chtn` prefix.
 
-        root = "http://chtn.org/vocabulary#{packageInfo.version}/" # URI-prefix for all CHTN entities
+        root = "http://chtn.org/vocabulary/#{packageInfo.version}/" # URI-prefix for all CHTN entities
         context =
             "@vocab": root
             "chtn": root
