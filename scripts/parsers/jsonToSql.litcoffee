@@ -34,19 +34,19 @@ likewise in their respective relationship tables.
             insertStatement = ""
 
             if not knownEntities[row['AS Id']]
-              insertStatement += 'INSERT INTO anatomic_sites VALUES (\'' + row['AS Id'] + '\', \'' + row['Anatomic Site'] + '\'); \n'
+              insertStatement += 'INSERT INTO anatomic_sites VALUES (\'' + row['AS Id'] + '\', \'' + row['Anatomic Site'] + '\');\n'
               knownEntities[row['AS Id']] = true
 
             if not knownEntities[row['SubS Id']]
-              insertStatement += 'INSERT INTO subsites VALUES (\'' + row['SubS Id'] + '\', \'' + row['Subsite'] + '\'); \n'
+              insertStatement += 'INSERT INTO subsites VALUES (\'' + row['SubS Id'] + '\', \'' + row['Subsite'] + '\');\n'
               knownEntities[row['SubS Id']] = true
 
             if not knownEntities[row['Cat Id']]
-              insertStatement += 'INSERT INTO categories VALUES (\'' + row['Cat Id'] + '\', \'' + row['Category'] + '\'); \n'
+              insertStatement += 'INSERT INTO categories VALUES (\'' + row['Cat Id'] + '\', \'' + row['Category'] + '\');\n'
               knownEntities[row['Cat Id']] = true
 
             if not knownEntities[row['DX Id']]
-              insertStatement += 'INSERT INTO diagnoses VALUES (\'' + row['DX Id'] + '\', \'' + row['Diagnosis'] + '\'); \n'
+              insertStatement += 'INSERT INTO diagnoses VALUES (\'' + row['DX Id'] + '\', \'' + row['Diagnosis'] + '\');\n'
               knownEntities[row['DX Id']] = true
 
             subsiteStatement = 'INSERT INTO dis_relationship_site_subsite VALUES (\'' + row['AS Id'] + '\', \'' + row['SubS Id'] + '\'); \n'
