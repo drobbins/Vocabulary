@@ -3,7 +3,7 @@ node_js:
 - '0.10'
 before_install:
 - npm install https://github.com/CooperativeHumanTissueNetwork/Vocabulary-Tooling/tarball/add-modifier-tooling
-script: ./node_modules/chtn-vocabulary/node_modules/coffee-script/bin/coffee node_modules/chtn-vocabulary/index.litcoffee -f CHTN\ Vocab-Disease\ List.txt
+script: ./node_modules/chtn-vocabulary-tools/node_modules/coffee-script/bin/coffee node_modules/chtn-vocabulary-tools/index.litcoffee -f CHTN\ Vocab-Disease\ List.txt
 deploy:
   provider: releases
   skip_cleanup: true
