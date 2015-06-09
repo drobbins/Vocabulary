@@ -2,14 +2,14 @@ language: node_js
 node_js:
 - '0.10'
 before_install:
-- npm install https://github.com/CooperativeHumanTissueNetwork/Vocabulary-Tooling/tarball/add-modifier-tooling
-script: ./node_modules/chtn-vocabulary-tools/node_modules/coffee-script/bin/coffee node_modules/chtn-vocabulary-tools/index.litcoffee -f CHTN\ Vocab-Disease\ List.txt
+- npm install https://github.com/CooperativeHumanTissueNetwork/Vocabulary-Tooling/tarball/v1.1.1
+script: ./node_modules/chtn-vocabulary-tools/node_modules/coffee-script/bin/coffee node_modules/chtn-vocabulary-tools/index.litcoffee -f CHTN-Core-Vocabulary.tsv
 deploy:
   provider: releases
   skip_cleanup: true
   api_key:
     secure: VmBzdZBq5hzaFVDngDr0bH/ogZ6s0vhZpaVz0i7QmhipjC66zOfBu8BnyTgNuLw3p/Wo9O3R6iTB6phe1uuyU0F94WQfsAb4Tjuzt/7j/m7gc8+QrWaqyi8Up6XSmV2XhjRwDNhrP95CEgIUy8DFLAtlwNXn42/NDwiQ7O9xUpE=
-  file: 'CHTN Vocab-Disease List.*'
+  file: 'CHTN-Core-Vocabulary.*'
   file_glob: true
   on:
     repo: drobbins/Vocabulary
